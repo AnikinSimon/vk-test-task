@@ -260,7 +260,7 @@ func TestPublishAfterClose(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = sp.Publish("test", "message")
-	assert.ErrorIs(t, err, errorSubPubClosed)
+	assert.ErrorIs(t, err, errSubPubClosed)
 }
 
 func TestSubscribeAfterClose(t *testing.T) {
@@ -275,5 +275,5 @@ func TestSubscribeAfterClose(t *testing.T) {
 
 	// Пытаемся подписаться после закрытия
 	_, err := sp.Subscribe("test", func(msg interface{}) {})
-	assert.ErrorIs(t, err, errorSubPubClosed)
+	assert.ErrorIs(t, err, errSubPubClosed)
 }
