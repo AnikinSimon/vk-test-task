@@ -13,7 +13,3 @@ type SubPub interface {
 	Publish(subject string, msg interface{}) error
 	Close(ctx context.Context) error
 }
-
-func NewSubPub() SubPub {
-	panic("implement me")
-}
