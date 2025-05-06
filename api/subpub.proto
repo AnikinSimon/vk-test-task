@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package subpub.v1;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/AnikinSimon/vk-test-task/internal/grpc/subpub/v1;subpubv1";
+
+service PubSub {
+  // Подписка (сервер отправляет поток событий)
+  rpc Subscribe(SubscribeRequest) returns (stream Event);
+  // Публикация (классический запрос-ответ)
+  rpc Publish(PublishRequest) returns (google.protobuf.Empty);
+}
+
+message SubscribeRequest {
+  string key = 1;
+}
+
+message PublishRequest {
+  string key = 1;
+  string data = 2;
+}
+
+message Event {
+  string data = 1;
+}
