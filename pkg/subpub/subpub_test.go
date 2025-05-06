@@ -3,6 +3,7 @@ package subpub
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
 	"time"
@@ -22,21 +23,16 @@ func TestSubscribePublish(t *testing.T) {
 	}
 
 	sub, err := sp.Subscribe("test", handler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 	defer sub.Unsubscribe()
 
 	testMsg := "hello world"
-	if err := sp.Publish("test", testMsg); err != nil {
-		t.Fatalf("Publish failed: %v", err)
-	}
+	err = sp.Publish("test", testMsg)
+	require.NoError(t, err)
 
 	wg.Wait()
 
-	if receivedMsg != testMsg {
-		t.Errorf("Expected message %v, got %v", testMsg, receivedMsg)
-	}
+	assert.Equal(t, testMsg, receivedMsg)
 }
 
 func TestMultipleSubscribers(t *testing.T) {
@@ -58,21 +54,16 @@ func TestMultipleSubscribers(t *testing.T) {
 
 	for i := 0; i < numSubscribers; i++ {
 		sub, err := sp.Subscribe("test", handler)
-		if err != nil {
-			t.Fatalf("Subscribe failed: %v", err)
-		}
+		require.NoError(t, err)
 		defer sub.Unsubscribe()
 	}
 
-	if err := sp.Publish("test", "message"); err != nil {
-		t.Fatalf("Publish failed: %v", err)
-	}
+	err := sp.Publish("test", "message")
+	require.NoError(t, err)
 
 	wg.Wait()
 
-	if receivedCount != numSubscribers {
-		t.Errorf("Expected %d subscribers to receive message, got %d", numSubscribers, receivedCount)
-	}
+	assert.Equal(t, numSubscribers, receivedCount)
 }
 
 func TestUnsubscribe(t *testing.T) {
@@ -82,7 +73,7 @@ func TestUnsubscribe(t *testing.T) {
 	var receivedCount int
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	wg.Add(1) // ожидаем только одно сообщение
+	wg.Add(1)
 
 	handler := func(msg interface{}) {
 		mu.Lock()
@@ -92,27 +83,19 @@ func TestUnsubscribe(t *testing.T) {
 	}
 
 	_, err := sp.Subscribe("test", handler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 
 	sub2, err := sp.Subscribe("test", handler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	// отписываемся перед публикацией
 	sub2.Unsubscribe()
 
-	if err := sp.Publish("test", "message"); err != nil {
-		t.Fatalf("Publish failed: %v", err)
-	}
+	err = sp.Publish("test", "message")
+	require.NoError(t, err)
 
 	wg.Wait()
 
-	if receivedCount != 1 {
-		t.Errorf("Expected 1 subscriber to receive message, got %d", receivedCount)
-	}
+	assert.Equal(t, 1, receivedCount)
 }
 
 func TestSlowSubscriber(t *testing.T) {
@@ -124,36 +107,28 @@ func TestSlowSubscriber(t *testing.T) {
 	fastWg.Add(1)
 	slowWg.Add(1)
 
-	// Быстрый подписчик
 	fastHandler := func(msg interface{}) {
 		fastReceived = true
 		fastWg.Done()
 	}
 
-	// Медленный подписчик
 	slowHandler := func(msg interface{}) {
-		time.Sleep(100 * time.Millisecond) // имитируем медленную обработку
+		time.Sleep(100 * time.Millisecond)
 		slowReceived = true
 		slowWg.Done()
 	}
 
 	fastSub, err := sp.Subscribe("test", fastHandler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 	defer fastSub.Unsubscribe()
 
 	slowSub, err := sp.Subscribe("test", slowHandler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 	defer slowSub.Unsubscribe()
 
-	if err := sp.Publish("test", "message"); err != nil {
-		t.Fatalf("Publish failed: %v", err)
-	}
+	err = sp.Publish("test", "message")
+	require.NoError(t, err)
 
-	// Проверяем, что быстрый подписчик получил сообщение быстро
 	fastDone := make(chan struct{})
 	go func() {
 		fastWg.Wait()
@@ -162,18 +137,13 @@ func TestSlowSubscriber(t *testing.T) {
 
 	select {
 	case <-fastDone:
-		if !fastReceived {
-			t.Error("Fast subscriber did not receive message")
-		}
+		assert.True(t, fastReceived)
 	case <-time.After(50 * time.Millisecond):
 		t.Error("Fast subscriber was blocked by slow subscriber")
 	}
 
-	// Проверяем, что медленный подписчик все же получил сообщение
 	slowWg.Wait()
-	if !slowReceived {
-		t.Error("Slow subscriber did not receive message")
-	}
+	assert.True(t, slowReceived)
 }
 
 func TestMessageOrder(t *testing.T) {
@@ -194,24 +164,18 @@ func TestMessageOrder(t *testing.T) {
 	}
 
 	sub, err := sp.Subscribe("test", handler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	assert.NoError(t, err)
 	defer sub.Unsubscribe()
 
 	for i := 0; i < numMessages; i++ {
-		if err := sp.Publish("test", i); err != nil {
-			t.Fatalf("Publish failed: %v", err)
-		}
+		err := sp.Publish("test", i)
+		assert.NoError(t, err)
 	}
 
 	wg.Wait()
 
 	for i := 0; i < numMessages; i++ {
-		if received[i] != i {
-			t.Errorf("Message out of order. Expected %d at position %d, got %d", i, i, received[i])
-			break
-		}
+		assert.Equal(t, i, received[i])
 	}
 }
 
@@ -227,24 +191,16 @@ func TestCloseWithContext(t *testing.T) {
 	}
 
 	_, err := sp.Subscribe("test", slowHandler)
-	if err != nil {
-		t.Fatalf("Subscribe failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	// Публикуем сообщение
-	if err := sp.Publish("test", "message"); err != nil {
-		t.Fatalf("Publish failed: %v", err)
-	}
+	err = sp.Publish("test", "message")
+	require.NoError(t, err)
 
-	// Создаем контекст с таймаутом
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	// Закрываем с контекстом, который отменится быстрее чем обработчик закончит работу
 	err = sp.Close(ctx)
-	if err != context.DeadlineExceeded {
-		t.Errorf("Expected context.DeadlineExceeded, got %v", err)
-	}
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 
 	// Даем время медленному обработчику завершиться
 	slowWg.Wait()
@@ -266,14 +222,11 @@ func TestPublishAfterClose(t *testing.T) {
 func TestSubscribeAfterClose(t *testing.T) {
 	sp := NewSubPub()
 
-	// Закрываем шину
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	if err := sp.Close(ctx); err != nil {
-		t.Fatalf("Close failed: %v", err)
-	}
+	err := sp.Close(ctx)
+	require.NoError(t, err)
 
-	// Пытаемся подписаться после закрытия
-	_, err := sp.Subscribe("test", func(msg interface{}) {})
+	_, err = sp.Subscribe("test", func(msg interface{}) {})
 	assert.ErrorIs(t, err, errSubPubClosed)
 }
