@@ -16,6 +16,14 @@ gen-proto:
 lint:
 	golangci-lint run
 
+stop:
+	docker compose stop
 
 unit:
 	go test -v ./...
+
+run: build
+	docker compose up -d --build
+
+build:
+	docker build -t subpub .

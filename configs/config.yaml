@@ -1,0 +1,4 @@
+env: "prod"
+grpc:
+  port: 8081
+  keep_alive_timeout: 10s
