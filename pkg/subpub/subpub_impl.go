@@ -8,7 +8,9 @@ import (
 )
 
 var (
-	errSubPubClosed = errors.New("subpub already closed")
+	ErrSubPubClosed      = errors.New("subpub already closed")
+	ErrSubjectNotFound   = errors.New("subject not found")
+	ErrNilMessageHandler = errors.New("nil message handler")
 )
 
 const (
@@ -47,7 +49,11 @@ func (sp *subPubImpl) Subscribe(subject string, cb MessageHandler) (Subscription
 	defer sp.mu.Unlock()
 
 	if sp.closed {
-		return nil, errSubPubClosed
+		return nil, ErrSubPubClosed
+	}
+
+	if cb == nil {
+		return nil, ErrNilMessageHandler
 	}
 
 	sub := &subscriber{
@@ -93,7 +99,7 @@ func (sp *subPubImpl) Publish(subject string, msg interface{}) error {
 	defer sp.mu.RUnlock()
 
 	if sp.closed {
-		return errSubPubClosed
+		return ErrSubPubClosed
 	}
 
 	if subs, ok := sp.subscribers[subject]; ok {
@@ -106,8 +112,10 @@ func (sp *subPubImpl) Publish(subject string, msg interface{}) error {
 				}(sub, msg)
 			}
 		}
+		return nil
+	} else {
+		return ErrSubjectNotFound
 	}
-	return nil
 }
 
 func (sp *subPubImpl) Close(ctx context.Context) error {
