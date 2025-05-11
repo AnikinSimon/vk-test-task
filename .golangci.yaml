@@ -1,0 +1,37 @@
+version: "2"
+run:
+  tests: false
+linters:
+  enable:
+    - bidichk
+    - bodyclose
+    - decorder
+    - dupl
+    - errname
+    - funlen
+    - godot
+    - misspell
+    - nestif
+    - predeclared
+    - usestdlibvars
+    - whitespace
+  disable:
+    - errcheck
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
