@@ -67,9 +67,6 @@ func (sp *subPubImpl) Subscribe(subject string, cb MessageHandler) (Subscription
 		defer sp.mu.Unlock()
 		if subs, ok := sp.subscribers[subject]; ok {
 			delete(subs, sub)
-			if len(subs) == 0 {
-				delete(sp.subscribers, subject)
-			}
 		}
 		close(sub.msgCh)
 	}
